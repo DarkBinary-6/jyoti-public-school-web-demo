@@ -51,8 +51,7 @@ const Admissions: React.FC = () => {
 
   return (
     <div className="bg-sky-50 min-h-screen">
-      <div className="bg-gradient-to-r from-secondary to-secondaryDark py-20 text-center text-white shadow-lg relative overflow-hidden">
-        <div className="absolute inset-0 bg-white opacity-5 animate-pulse-slow"></div>
+      <div className="bg-gradient-to-r from-primaryDark to-primary py-20 text-center text-white shadow-lg relative overflow-hidden">
         <h1 className="text-5xl font-extrabold mb-4 text-shadow-sm relative z-10 animate-fade-in-up">Admissions</h1>
         <p className="text-white/90 text-xl font-medium relative z-10 animate-fade-in-up" style={{animationDelay: '0.1s'}}>Join the Jyoti Public School Family</p>
       </div>
