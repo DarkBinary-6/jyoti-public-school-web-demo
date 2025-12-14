@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Trash2, Bell, MessageSquare, Plus, X } from 'lucide-react';
+import { LogOut, Trash2, Bell, MessageSquare, Plus, X, Calendar } from 'lucide-react';
 
 interface Enquiry {
   id: number;
@@ -17,7 +17,9 @@ interface Enquiry {
 interface Notice {
   id: number;
   title: string;
-  date: string;
+  description: string;
+  startDate: string; // ISO Date String YYYY-MM-DD
+  endDate: string; // ISO Date String YYYY-MM-DD
   isNew: boolean;
 }
 
@@ -25,7 +27,15 @@ const AdminDashboard: React.FC = () => {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [activeTab, setActiveTab] = useState<'enquiries' | 'notices'>('enquiries');
-  const [newNotice, setNewNotice] = useState({ title: '', date: '', isNew: true });
+  
+  // Notice Form State
+  const [newNotice, setNewNotice] = useState({ 
+    title: '', 
+    description: '',
+    startDate: new Date().toISOString().split('T')[0], // Default to today
+    endDate: '', 
+    isNew: true 
+  });
   
   const navigate = useNavigate();
   const isAdmin = localStorage.getItem('isAdmin');
@@ -43,11 +53,20 @@ const AdminDashboard: React.FC = () => {
       if (storedNotices) {
           setNotices(storedNotices);
       } else {
-          // Defaults if empty for testing
-           const defaults = [
-            { id: 1, title: "Admission Open for Session 2025-26 - Apply Now", date: "2024-03-01", isNew: true },
-            { id: 2, title: "Annual Sports Day scheduled for December 15th", date: "2024-11-20", isNew: false },
-            { id: 3, title: "Half-yearly examination datesheet released", date: "2024-10-05", isNew: false }
+          // Initialize defaults if empty (simulated, usually handled in Home)
+          const today = new Date();
+          const nextMonth = new Date();
+          nextMonth.setMonth(today.getMonth() + 1);
+
+          const defaults: Notice[] = [
+            { 
+                id: 1, 
+                title: "Admission Open for Session 2025-26 - Apply Now", 
+                description: "Admissions are now open for all classes...",
+                startDate: today.toISOString().split('T')[0],
+                endDate: nextMonth.toISOString().split('T')[0],
+                isNew: true 
+            }
           ];
           setNotices(defaults);
       }
@@ -70,7 +89,10 @@ const AdminDashboard: React.FC = () => {
   // Notice Actions
   const handleNoticeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if(!newNotice.title || !newNotice.date) return;
+    if(!newNotice.title || !newNotice.startDate || !newNotice.endDate) {
+        alert("Please fill in Title and Date Range.");
+        return;
+    }
 
     const notice: Notice = {
         id: Date.now(),
@@ -80,7 +102,15 @@ const AdminDashboard: React.FC = () => {
     const updatedNotices = [notice, ...notices];
     setNotices(updatedNotices);
     localStorage.setItem('school_notices', JSON.stringify(updatedNotices));
-    setNewNotice({ title: '', date: '', isNew: true });
+    
+    // Reset Form
+    setNewNotice({ 
+        title: '', 
+        description: '', 
+        startDate: new Date().toISOString().split('T')[0], 
+        endDate: '', 
+        isNew: true 
+    });
   };
 
   const deleteNotice = (id: number) => {
@@ -197,7 +227,7 @@ const AdminDashboard: React.FC = () => {
                     </h3>
                     <form onSubmit={handleNoticeSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Title / Announcement</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Title</label>
                             <input 
                                 type="text"
                                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary/20 outline-none"
@@ -207,17 +237,41 @@ const AdminDashboard: React.FC = () => {
                                 required
                             />
                         </div>
+                        
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Date</label>
-                            <input 
-                                type="date"
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary/20 outline-none"
-                                value={newNotice.date}
-                                onChange={(e) => setNewNotice({...newNotice, date: e.target.value})}
-                                required
-                            />
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
+                            <textarea 
+                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary/20 outline-none h-24 resize-none"
+                                placeholder="Enter detailed notice information here..."
+                                value={newNotice.description}
+                                onChange={(e) => setNewNotice({...newNotice, description: e.target.value})}
+                            ></textarea>
                         </div>
-                        <div className="flex items-center">
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Valid From</label>
+                                <input 
+                                    type="date"
+                                    className="w-full px-2 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary/20 outline-none text-sm"
+                                    value={newNotice.startDate}
+                                    onChange={(e) => setNewNotice({...newNotice, startDate: e.target.value})}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Valid Until</label>
+                                <input 
+                                    type="date"
+                                    className="w-full px-2 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary/20 outline-none text-sm"
+                                    value={newNotice.endDate}
+                                    onChange={(e) => setNewNotice({...newNotice, endDate: e.target.value})}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center pt-2">
                             <input 
                                 type="checkbox" 
                                 id="isNew"
@@ -242,23 +296,31 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     ) : (
                         notices.map((notice) => (
-                            <div key={notice.id} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start group hover:shadow-md transition-all">
-                                <div className="flex gap-4">
+                            <div key={notice.id} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center group hover:shadow-md transition-all gap-4">
+                                <div className="flex gap-4 items-start w-full">
                                     <div className="flex flex-col items-center justify-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 min-w-[70px]">
-                                        <span className="text-xs font-bold text-gray-500 uppercase">{new Date(notice.date).toLocaleString('default', { month: 'short' })}</span>
-                                        <span className="text-xl font-bold text-primary">{new Date(notice.date).getDate()}</span>
+                                        <span className="text-xs font-bold text-gray-500 uppercase">
+                                            {notice.startDate ? new Date(notice.startDate).toLocaleString('default', { month: 'short' }) : 'N/A'}
+                                        </span>
+                                        <span className="text-xl font-bold text-primary">
+                                            {notice.startDate ? new Date(notice.startDate).getDate() : '-'}
+                                        </span>
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-gray-800 text-lg mb-1">{notice.title}</h4>
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex-grow">
+                                        <h4 className="font-bold text-gray-800 text-lg mb-1 leading-tight">{notice.title}</h4>
+                                        <p className="text-xs text-gray-400 line-clamp-1 mb-1">{notice.description || "No description provided."}</p>
+                                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
                                             {notice.isNew && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold border border-red-200">NEW</span>}
-                                            <span className="text-xs text-gray-400">{new Date(notice.date).getFullYear()}</span>
+                                            <span className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded">
+                                                <Calendar size={10} /> 
+                                                {notice.startDate} <span className="text-gray-400">to</span> {notice.endDate}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => deleteNotice(notice.id)}
-                                    className="text-gray-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-full transition-colors"
+                                    className="text-gray-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-full transition-colors flex-shrink-0"
                                     title="Delete Notice"
                                 >
                                     <Trash2 className="w-5 h-5" />
