@@ -13,11 +13,10 @@ interface Notice {
 }
 
 const NoticeItem: React.FC<{ notice: Notice; idSuffix?: string; onSelect: (notice: Notice) => void }> = ({ notice, idSuffix = '', onSelect }) => (
-    <div
-  id={`notice-${notice.id}${idSuffix}`}
-  onClick={() => onSelect(notice)}
-  className="group flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-sky-200 hover:shadow-md transition-all bg-sky-50/30 cursor-pointer mb-4 bg-white"
->
+    <div 
+        onClick={() => onSelect(notice)}
+        className="group flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-sky-200 hover:shadow-md transition-all bg-sky-50/30 cursor-pointer mb-4 bg-white"
+    >
         <div className="flex-shrink-0 flex flex-col items-center justify-center bg-white p-3 rounded-lg border border-gray-100 shadow-sm w-16 text-center group-hover:border-secondary transition-colors">
             <span className="text-xs font-bold text-gray-500 uppercase">{new Date(notice.startDate).toLocaleString('default', { month: 'short' })}</span>
             <span className="text-xl font-bold text-primary">{new Date(notice.startDate).getDate()}</span>
@@ -49,52 +48,65 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     // Fetch notices from local storage or use defaults
-    const storedNotices = JSON.parse(localStorage.getItem('school_notices') || 'null');
+    // Changed key to 'school_notices_v2' to force a refresh of default data for the user
+    const storedNotices = JSON.parse(localStorage.getItem('school_notices_v2') || 'null');
+    
     if (storedNotices) {
       setNotices(storedNotices);
     } else {
+      // Create dynamic dates so they are always active when the user views the page
       const today = new Date();
-      const nextMonth = new Date();
-      nextMonth.setMonth(today.getMonth() + 1);
-      const pastDate = new Date();
-      pastDate.setMonth(today.getMonth() - 1);
+      
+      const getDateString = (offsetDays: number) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + offsetDays);
+        return d.toISOString().split('T')[0];
+      };
 
       const defaults: Notice[] = [
         { 
             id: 1, 
             title: "Admission Open for Session 2025-26 - Apply Now", 
             description: "Admissions are now open for all classes from Nursery to Class IX. Parents can visit the school office between 9 AM and 2 PM to collect the admission form. The last date for submission is March 31st, 2025. Please bring the child's birth certificate and 2 passport-size photographs.",
-            startDate: pastDate.toISOString().split('T')[0],
-            endDate: nextMonth.toISOString().split('T')[0],
+            startDate: getDateString(-5), // 5 days ago
+            endDate: getDateString(60),   // 2 months later
             isNew: true 
         },
         { 
             id: 2, 
-            title: "Annual Sports Day scheduled for December 15th", 
-            description: "The Annual Sports Day will be held on December 15th at the school playground. Students are requested to report by 8:00 AM in their respective house uniforms. Parents are cordially invited to witness the event.",
-            startDate: "2024-11-20", 
-            endDate: "2024-12-16",
-            isNew: false 
+            title: "Annual Sports Day scheduled for next month", 
+            description: "The Annual Sports Day will be held at the school playground. Students are requested to report by 8:00 AM in their respective house uniforms. Parents are cordially invited to witness the event.",
+            startDate: getDateString(-2), 
+            endDate: getDateString(20),
+            isNew: true 
         },
         { 
             id: 3, 
             title: "Half-yearly examination datesheet released", 
-            description: "The datesheet for the upcoming half-yearly examinations has been released. Exams will commence from October 15th. Students can collect the printed schedule from their class teachers.",
-            startDate: "2024-10-01", 
-            endDate: "2024-10-30",
+            description: "The datesheet for the upcoming half-yearly examinations has been released. Exams will commence soon. Students can collect the printed schedule from their class teachers.",
+            startDate: getDateString(-10), 
+            endDate: getDateString(5),
             isNew: false 
         },
         { 
             id: 4, 
             title: "Winter Vacation Announcement", 
-            description: "The school will remain closed for winter vacation from December 30th to January 10th. Classes will resume on January 11th.",
-            startDate: "2024-12-25", 
-            endDate: "2025-01-10",
+            description: "The school will remain closed for winter vacation starting next week. Classes will resume after 15 days.",
+            startDate: getDateString(0), 
+            endDate: getDateString(15),
+            isNew: true 
+        },
+        { 
+            id: 5, 
+            title: "Parent-Teacher Meeting (PTM)", 
+            description: "A PTM will be held this Saturday to discuss student progress. All parents are requested to attend.",
+            startDate: getDateString(-1), 
+            endDate: getDateString(6),
             isNew: false 
         }
       ];
       setNotices(defaults);
-      localStorage.setItem('school_notices', JSON.stringify(defaults));
+      localStorage.setItem('school_notices_v2', JSON.stringify(defaults));
     }
   }, []);
 
@@ -112,10 +124,16 @@ const Home: React.FC = () => {
       return today >= start && today <= end;
   });
 
-  const shouldScroll = activeNotices.length > 3;
+  // Scroll if we have more than 2 items to make it look good
+  const shouldScroll = activeNotices.length > 2;
 
   return (
     <main className="bg-sky-50 overflow-x-hidden relative">
+      <style>{`
+        .animate-scroll-up:hover {
+            animation-play-state: paused;
+        }
+      `}</style>
       
       {/* Notice Modal */}
       {selectedNotice && (
@@ -249,7 +267,7 @@ const Home: React.FC = () => {
             <div className="p-6 md:w-3/4 bg-white relative h-[350px] overflow-hidden">
                 {activeNotices.length > 0 ? (
                     <div 
-                        className={`space-y-0 ${shouldScroll ? 'animate-scroll-up hover:[animation-play-state:paused]' : 'h-full overflow-y-auto pr-2 custom-scrollbar'}`}
+                        className={`space-y-0 ${shouldScroll ? 'animate-scroll-up' : 'h-full overflow-y-auto pr-2 custom-scrollbar'}`}
                     >
                          {/* Original List */}
                          {activeNotices.map((notice) => (
