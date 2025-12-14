@@ -49,26 +49,14 @@ const AdminDashboard: React.FC = () => {
       setEnquiries(enqData);
       
       // Load notices
-      const storedNotices = JSON.parse(localStorage.getItem('school_notices') || 'null');
+      // Changed key to school_notices_v2 to match Home
+      const storedNotices = JSON.parse(localStorage.getItem('school_notices_v2') || 'null');
       if (storedNotices) {
           setNotices(storedNotices);
       } else {
           // Initialize defaults if empty (simulated, usually handled in Home)
-          const today = new Date();
-          const nextMonth = new Date();
-          nextMonth.setMonth(today.getMonth() + 1);
-
-          const defaults: Notice[] = [
-            { 
-                id: 1, 
-                title: "Admission Open for Session 2025-26 - Apply Now", 
-                description: "Admissions are now open for all classes...",
-                startDate: today.toISOString().split('T')[0],
-                endDate: nextMonth.toISOString().split('T')[0],
-                isNew: true 
-            }
-          ];
-          setNotices(defaults);
+          // Just empty array here is fine, as Home usually populates defaults
+          setNotices([]);
       }
     }
   }, [navigate, isAdmin]);
@@ -101,7 +89,7 @@ const AdminDashboard: React.FC = () => {
     
     const updatedNotices = [notice, ...notices];
     setNotices(updatedNotices);
-    localStorage.setItem('school_notices', JSON.stringify(updatedNotices));
+    localStorage.setItem('school_notices_v2', JSON.stringify(updatedNotices));
     
     // Reset Form
     setNewNotice({ 
@@ -117,7 +105,7 @@ const AdminDashboard: React.FC = () => {
       if(confirm("Delete this notice?")) {
         const updatedNotices = notices.filter(n => n.id !== id);
         setNotices(updatedNotices);
-        localStorage.setItem('school_notices', JSON.stringify(updatedNotices));
+        localStorage.setItem('school_notices_v2', JSON.stringify(updatedNotices));
       }
   };
 
