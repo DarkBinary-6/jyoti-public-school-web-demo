@@ -1,10 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Lightbulb, BookOpen, Heart, ArrowRight, ShieldCheck, Monitor, FlaskConical, GraduationCap, Bell, Calendar } from 'lucide-react';
+import { Lightbulb, BookOpen, Heart, ArrowRight, ShieldCheck, Monitor, FlaskConical, GraduationCap, Bell, Calendar, X, Clock } from 'lucide-react';
 import { SCHOOL_INFO, IMAGES } from '../constants';
 
+interface Notice {
+  id: number;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  isNew: boolean;
+}
+
+const NoticeItem: React.FC<{ notice: Notice; idSuffix?: string; onSelect: (notice: Notice) => void }> = ({ notice, idSuffix = '', onSelect }) => (
+    <div 
+        onClick={() => onSelect(notice)}
+        className="group flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-sky-200 hover:shadow-md transition-all bg-sky-50/30 cursor-pointer mb-4 bg-white"
+    >
+        <div className="flex-shrink-0 flex flex-col items-center justify-center bg-white p-3 rounded-lg border border-gray-100 shadow-sm w-16 text-center group-hover:border-secondary transition-colors">
+            <span className="text-xs font-bold text-gray-500 uppercase">{new Date(notice.startDate).toLocaleString('default', { month: 'short' })}</span>
+            <span className="text-xl font-bold text-primary">{new Date(notice.startDate).getDate()}</span>
+        </div>
+        <div className="flex-grow">
+            <div className="flex items-center gap-2 mb-1">
+                {notice.isNew && (
+                    <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse">NEW</span>
+                )}
+                <h3 className="font-bold text-gray-800 group-hover:text-secondary transition-colors line-clamp-2">
+                    {notice.title}
+                </h3>
+            </div>
+            <p className="text-xs text-gray-500 flex items-center gap-1">
+                <Calendar size={12} /> Valid until: {new Date(notice.endDate).toLocaleDateString()}
+            </p>
+        </div>
+        <div className="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-primary">
+                <ArrowRight size={16} />
+            </div>
+        </div>
+    </div>
+);
+
 const Home: React.FC = () => {
-  const [notices, setNotices] = useState<any[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
 
   useEffect(() => {
     // Fetch notices from local storage or use defaults
@@ -12,19 +52,114 @@ const Home: React.FC = () => {
     if (storedNotices) {
       setNotices(storedNotices);
     } else {
-      const defaults = [
-        { id: 1, title: "Admission Open for Session 2025-26 - Apply Now", date: "2024-03-01", isNew: true },
-        { id: 2, title: "Annual Sports Day scheduled for December 15th", date: "2024-11-20", isNew: false },
-        { id: 3, title: "Half-yearly examination datesheet released", date: "2024-10-05", isNew: false }
+      const today = new Date();
+      const nextMonth = new Date();
+      nextMonth.setMonth(today.getMonth() + 1);
+      const pastDate = new Date();
+      pastDate.setMonth(today.getMonth() - 1);
+
+      const defaults: Notice[] = [
+        { 
+            id: 1, 
+            title: "Admission Open for Session 2025-26 - Apply Now", 
+            description: "Admissions are now open for all classes from Nursery to Class IX. Parents can visit the school office between 9 AM and 2 PM to collect the admission form. The last date for submission is March 31st, 2025. Please bring the child's birth certificate and 2 passport-size photographs.",
+            startDate: pastDate.toISOString().split('T')[0],
+            endDate: nextMonth.toISOString().split('T')[0],
+            isNew: true 
+        },
+        { 
+            id: 2, 
+            title: "Annual Sports Day scheduled for December 15th", 
+            description: "The Annual Sports Day will be held on December 15th at the school playground. Students are requested to report by 8:00 AM in their respective house uniforms. Parents are cordially invited to witness the event.",
+            startDate: "2024-11-20", 
+            endDate: "2024-12-16",
+            isNew: false 
+        },
+        { 
+            id: 3, 
+            title: "Half-yearly examination datesheet released", 
+            description: "The datesheet for the upcoming half-yearly examinations has been released. Exams will commence from October 15th. Students can collect the printed schedule from their class teachers.",
+            startDate: "2024-10-01", 
+            endDate: "2024-10-30",
+            isNew: false 
+        },
+        { 
+            id: 4, 
+            title: "Winter Vacation Announcement", 
+            description: "The school will remain closed for winter vacation from December 30th to January 10th. Classes will resume on January 11th.",
+            startDate: "2024-12-25", 
+            endDate: "2025-01-10",
+            isNew: false 
+        }
       ];
       setNotices(defaults);
-      // Optionally save defaults to storage so they persist
-      // localStorage.setItem('school_notices', JSON.stringify(defaults));
+      localStorage.setItem('school_notices', JSON.stringify(defaults));
     }
   }, []);
 
+  // Filter notices based on date range
+  const activeNotices = notices.filter(notice => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
+      
+      const start = new Date(notice.startDate);
+      const end = new Date(notice.endDate);
+      
+      // Fallback if dates are invalid, show them
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return true;
+
+      return today >= start && today <= end;
+  });
+
+  const shouldScroll = activeNotices.length > 3;
+
   return (
-    <main className="bg-sky-50 overflow-x-hidden">
+    <main className="bg-sky-50 overflow-x-hidden relative">
+      
+      {/* Notice Modal */}
+      {selectedNotice && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-up">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden relative">
+                <div className="bg-gradient-to-r from-primary to-primaryDark p-6 flex justify-between items-start">
+                    <h3 className="text-xl md:text-2xl font-bold text-white pr-8 leading-snug">
+                        {selectedNotice.title}
+                    </h3>
+                    <button 
+                        onClick={() => setSelectedNotice(null)}
+                        className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors absolute top-4 right-4"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className="p-8 max-h-[70vh] overflow-y-auto">
+                    <div className="flex flex-wrap gap-4 mb-6 text-sm text-gray-500 border-b border-gray-100 pb-4">
+                        <div className="flex items-center gap-2 bg-sky-50 px-3 py-1 rounded-full text-primary font-medium">
+                            <Calendar size={16} />
+                            <span>Posted: {new Date(selectedNotice.startDate).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full text-red-600 font-medium">
+                            <Clock size={16} />
+                            <span>Valid until: {new Date(selectedNotice.endDate).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    
+                    <div className="prose max-w-none text-gray-700 leading-relaxed whitespace-pre-line">
+                        {selectedNotice.description || "No additional details available for this notice."}
+                    </div>
+
+                    <div className="mt-8 pt-4 border-t border-gray-100 flex justify-end">
+                        <button 
+                            onClick={() => setSelectedNotice(null)}
+                            className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-lg transition-colors"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="relative h-[650px] flex items-center justify-center overflow-hidden perspective">
         <div 
@@ -97,7 +232,7 @@ const Home: React.FC = () => {
       {/* Notice Board Section */}
       <section className="container mx-auto px-4 mt-16 mb-8">
         <div className="bg-white rounded-2xl shadow-xl border border-sky-100 overflow-hidden flex flex-col md:flex-row animate-fade-in-up">
-            <div className="bg-gradient-to-br from-primary to-primaryDark text-white p-6 md:w-1/4 flex flex-col justify-center items-center md:items-start relative overflow-hidden">
+            <div className="bg-gradient-to-br from-primary to-primaryDark text-white p-6 md:w-1/4 flex flex-col justify-center items-center md:items-start relative overflow-hidden z-20">
                 <div className="absolute top-0 right-0 opacity-10 transform translate-x-1/2 -translate-y-1/2">
                     <Bell size={120} />
                 </div>
@@ -105,41 +240,38 @@ const Home: React.FC = () => {
                     <Bell className="w-6 h-6 animate-bounce" />
                     <h2 className="text-xl font-bold uppercase tracking-wider">Notice Board</h2>
                 </div>
-                <p className="text-sky-200 text-sm relative z-10 text-center md:text-left">Stay updated with the latest announcements.</p>
+                <p className="text-sky-200 text-sm relative z-10 text-center md:text-left">
+                    Stay updated with the latest announcements.
+                    <br/><span className="text-xs opacity-75 mt-2 block">(Click on a notice to view details)</span>
+                </p>
             </div>
-            <div className="p-6 md:w-3/4 bg-white relative">
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                    {notices.length > 0 ? notices.map((notice) => (
-                        <div key={notice.id} className="group flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-sky-200 hover:shadow-md transition-all bg-sky-50/30">
-                            <div className="flex-shrink-0 flex flex-col items-center justify-center bg-white p-3 rounded-lg border border-gray-100 shadow-sm w-16 text-center">
-                                <span className="text-xs font-bold text-gray-500 uppercase">{new Date(notice.date).toLocaleString('default', { month: 'short' })}</span>
-                                <span className="text-xl font-bold text-primary">{new Date(notice.date).getDate()}</span>
-                            </div>
-                            <div className="flex-grow">
-                                <div className="flex items-center gap-2 mb-1">
-                                    {notice.isNew && (
-                                        <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse">NEW</span>
-                                    )}
-                                    <h3 className="font-bold text-gray-800 group-hover:text-secondary transition-colors line-clamp-2">
-                                        {notice.title}
-                                    </h3>
-                                </div>
-                                <p className="text-xs text-gray-500 flex items-center gap-1">
-                                    <Calendar size={12} /> Posted on {notice.date}
-                                </p>
-                            </div>
-                            <div className="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-primary">
-                                    <ArrowRight size={16} />
-                                </div>
-                            </div>
-                        </div>
-                    )) : (
-                        <div className="text-center py-10 text-gray-400">
-                            No active notices at the moment.
-                        </div>
-                    )}
-                </div>
+            <div className="p-6 md:w-3/4 bg-white relative h-[350px] overflow-hidden">
+                {activeNotices.length > 0 ? (
+                    <div 
+                        className={`space-y-0 ${shouldScroll ? 'animate-scroll-up hover:[animation-play-state:paused]' : 'h-full overflow-y-auto pr-2 custom-scrollbar'}`}
+                    >
+                         {/* Original List */}
+                         {activeNotices.map((notice) => (
+                             <NoticeItem key={notice.id} notice={notice} onSelect={setSelectedNotice} />
+                         ))}
+
+                         {/* Duplicate List for Loop (Only if scrolling) */}
+                         {shouldScroll && activeNotices.map((notice) => (
+                             <NoticeItem key={`dup-${notice.id}`} notice={notice} idSuffix="-dup" onSelect={setSelectedNotice} />
+                         ))}
+                    </div>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">
+                        <Bell className="w-12 h-12 mb-4 opacity-20" />
+                        No active notices at the moment.
+                    </div>
+                )}
+                {shouldScroll && (
+                     <div className="absolute bottom-0 left-0 w-full h-10 bg-gradient-to-t from-white to-transparent pointer-events-none z-10"></div>
+                )}
+                 {shouldScroll && (
+                     <div className="absolute top-0 left-0 w-full h-4 bg-gradient-to-b from-white to-transparent pointer-events-none z-10"></div>
+                )}
             </div>
         </div>
       </section>
