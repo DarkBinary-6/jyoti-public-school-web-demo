@@ -13,10 +13,11 @@ interface Notice {
 }
 
 const NoticeItem: React.FC<{ notice: Notice; idSuffix?: string; onSelect: (notice: Notice) => void }> = ({ notice, idSuffix = '', onSelect }) => (
-    <div 
-        onClick={() => onSelect(notice)}
-        className="group flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-sky-200 hover:shadow-md transition-all bg-sky-50/30 cursor-pointer mb-4 bg-white"
-    >
+    <div
+  id={`notice-${notice.id}${idSuffix}`}
+  onClick={() => onSelect(notice)}
+  className="group flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-sky-200 hover:shadow-md transition-all bg-sky-50/30 cursor-pointer mb-4 bg-white"
+>
         <div className="flex-shrink-0 flex flex-col items-center justify-center bg-white p-3 rounded-lg border border-gray-100 shadow-sm w-16 text-center group-hover:border-secondary transition-colors">
             <span className="text-xs font-bold text-gray-500 uppercase">{new Date(notice.startDate).toLocaleString('default', { month: 'short' })}</span>
             <span className="text-xl font-bold text-primary">{new Date(notice.startDate).getDate()}</span>
